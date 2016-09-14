@@ -1,4 +1,4 @@
-import requests, sys
+import requests, sys, os, pickle
 from stringUtil import cleanText
 
 class Course:
@@ -15,25 +15,39 @@ class Course:
          if info['code'] in interestingInfoCodes and 'text' in info:
             self.description += cleanText(info['text']) + " "
 
+def isPickled():
+   return os.path.isdir("data")
+
 def getCourseCodeList(url):
     result = requests.get(url)
     return [course['code'] for course in result.json()['course']]
 
 def getCourse(url):
     result = requests.get(url)
-    return Course(result.json()['course'])
+    try:
+       return Course(result.json()['course'])
+    except ValueError:
+       return None
 
-def getCourses():
-    baseUrl = "http://www.ime.ntnu.no/api/course/en/"
-    courseCodes = getCourseCodeList(baseUrl + "-")
-    courses = {}
-    numberOfCourses = len(courseCodes)
-    i = 1
-    for code in courseCodes:
-        if "-" in code: continue #An error in the API makes certain new courses unreachable
-        courses[code] = getCourse(baseUrl + code)
-        sys.stdout.write("\rDownloading subject %d/%d" % (i, numberOfCourses))
-        i += 1
-        if i > 20:
-            break
-    return courses
+def getCourses(redownload):
+    if redownload and isPickled():
+       os.remove("data/courses.p")
+       os.rmdir("data")
+   
+    if isPickled():
+       return pickle.load(open("data/courses.p", "rb"))
+    else:
+       baseUrl = "http://www.ime.ntnu.no/api/course/en/"
+       courseCodes = getCourseCodeList(baseUrl + "-")
+       courses = {}
+       numberOfCourses = len(courseCodes)
+       i = 1
+       for i in range(numberOfCourses):
+           code = courseCodes[i]
+           courses[code] = getCourse(baseUrl + code)
+           sys.stdout.write("\rDownloading subject %d/%d" % (i, numberOfCourses))
+
+       #Pickle the courses for faster access later
+       os.makedirs("data")
+       pickle.dump(courses, open("data/courses.p", "wb" ))
+       return courses
