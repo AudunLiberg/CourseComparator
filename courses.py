@@ -41,7 +41,6 @@ def getCourses(redownload):
        courseCodes = getCourseCodeList(baseUrl + "-")
        courses = {}
        numberOfCourses = len(courseCodes)
-       i = 1
        for i in range(numberOfCourses):
            code = courseCodes[i]
            courses[code] = getCourse(baseUrl + code)
