@@ -1,7 +1,7 @@
 import re
 
 def stripHTML(text):
-   return re.sub('<[^<]+?>', '', text)
+   return re.sub('<[^<]+?>', ' ', text)
 
 def stripWhitespace(text):
    return text.strip("\r\n\t")
