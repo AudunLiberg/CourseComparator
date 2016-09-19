@@ -1,12 +1,13 @@
 import sys
 from courses import getCourses
 from comparator import compare
+from operator import itemgetter
 
 def determineMode(course1, course2):
     if course1 != None and course2 != None:
         return "compare"
     elif course1 != None:
-        return "custom-compare"
+        return "find-equal"
     else:
         return "error"
 
@@ -19,7 +20,23 @@ def main(arguments):
     
     if mode == "compare":
         score = compare(courses[course1], courses[course2])
-        print (course1, "and", course2, "have a", score, "% match.")
+        print(course1, "and", course2, "have a", score, "% match.")
+    elif mode == "find-equal":
+        similarity = {}
+        courseCodes = list(courses.keys())
+        numberOfCourses = len(courses)
+        for i in range(numberOfCourses):
+            code = courseCodes[i]
+            if course1 == code:
+                continue
+            sys.stdout.write("\rComparing with course %d/%d" % (i, numberOfCourses))
+            similarity[code] = compare(courses[course1], courses[code])
+
+        #Print similarity in descending order
+        sortedSimilarity = sorted(similarity.items(), key=itemgetter(1), reverse=True)
+        print("\n\nMost similar courses to", course1 + ":")
+        for course in sortedSimilarity:
+            print("%-12s %-12s" % (course[0], course[1]))
 
 if __name__ == "__main__":
     main(sys.argv)
