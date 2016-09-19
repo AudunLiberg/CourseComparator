@@ -51,10 +51,7 @@ def getCourseCodeList(url):
 
 def getCourse(url):
     result = requests.get(url)
-    try:
-       return Course(result.json()['course'])
-    except ValueError:
-       return None
+    return Course(result.json()['course'])
 
 def getCourses(redownload):
     if redownload and isPickled():
