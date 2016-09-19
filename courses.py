@@ -1,14 +1,20 @@
-import requests, sys, os, pickle
+import requests, sys, os, pickle, glob
 from stringUtil import cleanText
+from collections import Counter
 from nltk import word_tokenize
 from nltk.corpus import stopwords
 from nltk.data import load as nltk_load
+from nltk.stem.wordnet import WordNetLemmatizer
 
 class Course:
+
+   wordFrequency = Counter()
+   
    def __init__(self, data):
       self.data = data
       self.setDescription()
       self.tokenize()
+      self.countWords()
 
    def setDescription(self):
       self.description = self.data['name'] + ". "
@@ -30,6 +36,12 @@ class Course:
          self.sentences.append(tokens)
          self.sentencesWithoutStopwords.append(tokensWithoutStopwords)
 
+   def countWords(self):
+      for sentence in self.sentencesWithoutStopwords:
+         for word in sentence:
+            lemmatizer = WordNetLemmatizer()
+            self.wordFrequency[lemmatizer.lemmatize(word.lower())] += 1
+
 def isPickled():
    return os.path.isdir("data")
 
@@ -46,10 +58,13 @@ def getCourse(url):
 
 def getCourses(redownload):
     if redownload and isPickled():
-       os.remove("data/courses.p")
+       files = glob.glob('data/*')
+       for file in files:
+          os.remove(file)
        os.rmdir("data")
    
     if isPickled():
+       Course.wordFrequency = pickle.load(open("data/wordfrequency.p", "rb"))
        return pickle.load(open("data/courses.p", "rb"))
     else:
        baseUrl = "http://www.ime.ntnu.no/api/course/en/"
@@ -64,4 +79,5 @@ def getCourses(redownload):
        #Pickle the courses for faster access later
        os.makedirs("data")
        pickle.dump(courses, open("data/courses.p", "wb" ))
+       pickle.dump(Course.wordFrequency, open("data/wordfrequency.p", "wb" ))
        return courses
