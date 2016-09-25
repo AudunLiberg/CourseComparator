@@ -22,7 +22,7 @@ def main(arguments):
     
     if mode == "compare":
         score = compare(courses[course1], courses[course2])
-        print(course1, "and", course2, "have a", score, "% match.")
+        print(course1, "and", course2, "have a", score*100, "% match.")
     elif mode == "find-equal":
         similarity = {}
         courseCodes = list(courses.keys())
