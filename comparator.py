@@ -1,7 +1,7 @@
 from comparators import *
 
 def compare(course1, course2):
-   ensemble = []
+   ensemble = [equalkeywords]
 
    scores = []
    for comparator in ensemble:
