@@ -1,6 +1,7 @@
 import requests, sys, os, pickle, glob
 from stringUtil import cleanText
 from collections import Counter
+from operator import itemgetter
 from nltk import word_tokenize
 from nltk.corpus import stopwords
 from nltk.data import load as nltk_load
@@ -9,6 +10,7 @@ from nltk.stem.wordnet import WordNetLemmatizer
 class Course:
 
    wordFrequency = Counter()
+   lemmatizer = WordNetLemmatizer()
    
    def __init__(self, data):
       self.data = data
@@ -39,8 +41,18 @@ class Course:
    def countWords(self):
       for sentence in self.sentencesWithoutStopwords:
          for word in sentence:
-            lemmatizer = WordNetLemmatizer()
-            self.wordFrequency[lemmatizer.lemmatize(word.lower())] += 1
+            self.wordFrequency[self.lemmatizer.lemmatize(word.lower())] += 1
+
+   def determineKeywords(self):
+      wordsByRarity = {}
+      for sentence in self.sentencesWithoutStopwords:
+         for word in sentence:
+            word = self.lemmatizer.lemmatize(word.lower())
+            wordsByRarity[word] = self.wordFrequency[word]
+
+      wordsByRarity = sorted(wordsByRarity.items(), key=itemgetter(1))
+      numKeywords = min(len(wordsByRarity), 30)
+      self.keywords = [keyword[0] for keyword in wordsByRarity[:numKeywords]]
 
 def isPickled():
    return os.path.isdir("data")
@@ -49,9 +61,9 @@ def getCourseCodeList(url):
     result = requests.get(url)
     return [course['code'] for course in result.json()['course']]
 
-def getCourse(url):
+def getCourseData(url):
     result = requests.get(url)
-    return Course(result.json()['course'])
+    return result.json()['course']
 
 def getCourses(redownload):
     if redownload and isPickled():
@@ -70,8 +82,13 @@ def getCourses(redownload):
        numberOfCourses = len(courseCodes)
        for i in range(numberOfCourses):
            code = courseCodes[i]
-           courses[code] = getCourse(baseUrl + code)
+           courseData = getCourseData(baseUrl + code)
+           if courseData != None:
+              courses[code] = Course(courseData)
            sys.stdout.write("\rDownloading subject %d/%d" % (i, numberOfCourses))
+            
+       for code in courses:
+          courses[code].determineKeywords()
 
        #Pickle the courses for faster access later
        os.makedirs("data")
