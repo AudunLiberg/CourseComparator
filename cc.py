@@ -15,6 +15,7 @@ def determineMode(course1, course2):
 
 def main(arguments):
     redownload = "-r" in arguments
+    verbose = "-v" in arguments
     courses = getCourses(redownload)
     course1 = arguments[1] if len(arguments) > 1 and arguments[1] in courses else None
     course2 = arguments[2] if len(arguments) > 2 and arguments[2] in courses else None
@@ -24,7 +25,7 @@ def main(arguments):
         score = compare(courses[course1], courses[course2])
         print(course1, "and", course2, "have a", score*100, "% match.")
     elif mode == "find-equal":
-        similarity = {}
+        comparisons = []
         courseCodes = list(courses.keys())
         numberOfCourses = len(courses)
         for i in range(numberOfCourses):
@@ -32,13 +33,15 @@ def main(arguments):
             if course1 == code:
                 continue
             sys.stdout.write("\rComparing with course %d/%d" % (i+1, numberOfCourses))
-            similarity[code] = compare(courses[course1], courses[code])
+            comparisons.append(compare(courses[course1], courses[code]))
 
         #Print similarity in descending order
-        sortedSimilarity = sorted(similarity.items(), key=itemgetter(1), reverse=True)
+        sortedComparisons = sorted(comparisons, key=lambda x: x.score, reverse=True)
         print("\n\nMost similar courses to", course1 + ":")
-        for course in sortedSimilarity[:numMatchesToDisplay]:
-            print("%-12s %-12s" % (course[0], course[1]))
+        for comparison in sortedComparisons[:numMatchesToDisplay]:
+            print("%-12s %-12s" % (comparison.course2.data['code'], comparison.score))
+            if verbose:
+                comparison.printExplanation()
 
 if __name__ == "__main__":
     main(sys.argv)
