@@ -17,6 +17,7 @@ class Course:
       self.setDescription()
       self.tokenize()
       self.countWords()
+      self.tests = []
 
    def setDescription(self):
       self.description = self.data['name'] + ". "
@@ -89,7 +90,12 @@ def getCourses(redownload):
             
        for code in courses:
           courses[code].determineKeywords()
-
+          #Use credit reduction as a basis for tests
+          if 'creditReduction' in courses[code].data:
+             for reduction in courses[code].data['creditReduction']:
+                if reduction['courseCode'] in courses:
+                   courses[code].tests.append(reduction['courseCode'])
+       
        #Pickle the courses for faster access later
        os.makedirs("data")
        pickle.dump(courses, open("data/courses.p", "wb" ))

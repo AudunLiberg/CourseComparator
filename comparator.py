@@ -1,3 +1,4 @@
+import sys
 from comparators import *
 
 def getModuleName(module):
@@ -18,6 +19,19 @@ class Comparison:
       for report in self.reports:
          print(report)
       print("#############\n")
+
+def compareToAllCourses(courses, course, doPrint=True):
+   comparisons = []
+   courseCodes = list(courses.keys())
+   numberOfCourses = len(courses)
+   for i in range(numberOfCourses):
+      code = courseCodes[i]
+      if course == code:
+         continue
+      if doPrint:
+         sys.stdout.write("\rComparing with course %d/%d" % (i+1, numberOfCourses))
+      comparisons.append(compare(courses[course], courses[code]))
+   return sorted(comparisons, key=lambda x: x.score, reverse=True)
 
 def compare(course1, course2):
    ensemble = [equalkeywords]
