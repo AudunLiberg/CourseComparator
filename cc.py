@@ -1,6 +1,6 @@
 import sys
 from courses import getCourses
-from comparator import compare, compareToAllCourses
+from comparator import compareToOneCourse, compareToAllCourses
 from tests import runTests
 
 numMatchesToDisplay = 20
@@ -23,15 +23,17 @@ def main(arguments):
     mode = determineMode(course1, course2)
     
     if mode == "compare":
-        score = compare(courses[course1], courses[course2])
-        print(course1, "and", course2, "have a", score*100, "% match.")
+        comparison = compareToOneCourse(courses[course1], courses[course2])
+        if verbose:
+            comparison.printExplanation()
+        print(course1, "and", course2, "have a", comparison.getScore()*100, "% match.")
     elif mode == "find-equal":
         comparisons = compareToAllCourses(courses, course1)
 
         #Print similarity in descending order
         print("\n\nMost similar courses to", course1 + ":")
         for comparison in comparisons[:numMatchesToDisplay]:
-            print("%-12s %-12s" % (comparison.course2.data['code'], comparison.score))
+            print("%-12s %-12s" % (comparison.course2.data['code'], comparison.getScore()))
             if verbose:
                 comparison.printExplanation()
 
