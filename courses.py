@@ -1,18 +1,24 @@
-import requests, sys, os, pickle, glob
+import requests, sys, os, shutil, pickle, glob
 from stringUtil import cleanText
 from collections import Counter
 from operator import itemgetter
 from nltk import word_tokenize
 from nltk.corpus import stopwords
 from nltk.data import load as nltk_load
-from nltk.stem.wordnet import WordNetLemmatizer
+from nltk.stem import SnowballStemmer
+
+languages = {
+   "no": "norwegian",
+   "en": "english"
+}
 
 class Course:
 
    wordFrequency = Counter()
-   lemmatizer = WordNetLemmatizer()
    
    def __init__(self, data):
+      self.language = languages[data["language"]]
+      self.stemmer = SnowballStemmer(self.language)
       self.data = data
       self.setDescription()
       self.tokenize()
@@ -29,26 +35,26 @@ class Course:
             self.description += cleanText(info['text']) + " "
 
    def tokenize(self):
-      sentenceDetector = nltk_load('tokenizers/punkt/english.pickle')
+      sentenceDetector = nltk_load("tokenizers/punkt/" + self.language + ".pickle")
       sentences = sentenceDetector.tokenize(self.description.strip())
       self.sentences = []
       self.sentencesWithoutStopwords = []
       for sentence in sentences:
          tokens = word_tokenize(sentence)
-         tokensWithoutStopwords = [word for word in tokens if word.lower() not in stopwords.words('english')]
+         tokensWithoutStopwords = [word for word in tokens if word.lower() not in stopwords.words(self.language)]
          self.sentences.append(tokens)
          self.sentencesWithoutStopwords.append(tokensWithoutStopwords)
 
    def countWords(self):
       for sentence in self.sentencesWithoutStopwords:
          for word in sentence:
-            self.wordFrequency[self.lemmatizer.lemmatize(word.lower())] += 1
+            self.wordFrequency[self.stemmer.stem(word.lower())] += 1
 
    def determineKeywords(self):
       wordsByRarity = {}
       for sentence in self.sentencesWithoutStopwords:
          for word in sentence:
-            word = self.lemmatizer.lemmatize(word.lower())
+            word = self.stemmer.stem(word.lower())
             wordsByRarity[word] = self.wordFrequency[word]
 
       wordsByRarity = sorted(wordsByRarity.items(), key=itemgetter(1))
@@ -63,41 +69,45 @@ def getCourseCodeList(url):
     return [course['code'] for course in result.json()['course']]
 
 def getCourseData(url):
-    result = requests.get(url)
-    return result.json()['course']
+    result = requests.get(url).json()
+    result["course"]["language"] = result["request"]["language"]
+    return result["course"]
 
-def getCourses(redownload):
+def getCourses(redownload, chosenLanguage):
     if redownload and isPickled():
-       files = glob.glob('data/*')
-       for file in files:
-          os.remove(file)
-       os.rmdir("data")
-   
+       shutil.rmtree('data/')
+
+    coursesList = {}
     if isPickled():
-       Course.wordFrequency = pickle.load(open("data/wordfrequency.p", "rb"))
-       return pickle.load(open("data/courses.p", "rb"))
+       Course.wordFrequency = pickle.load(open("data/" + chosenLanguage + "/wordfrequency.p", "rb"))
+       return pickle.load(open("data/" + chosenLanguage + "/courses.p", "rb"))
     else:
-       baseUrl = "http://www.ime.ntnu.no/api/course/en/"
+       baseUrl = "http://www.ime.ntnu.no/api/course/"
        courseCodes = getCourseCodeList(baseUrl + "-")
-       courses = {}
        numberOfCourses = len(courseCodes)
-       for i in range(numberOfCourses):
-           code = courseCodes[i]
-           courseData = getCourseData(baseUrl + code)
-           if courseData != None:
-              courses[code] = Course(courseData)
-           sys.stdout.write("\rDownloading subject %d/%d" % (i, numberOfCourses))
-            
-       for code in courses:
-          courses[code].determineKeywords()
-          #Use credit reduction as a basis for tests
-          if 'creditReduction' in courses[code].data:
-             for reduction in courses[code].data['creditReduction']:
-                if reduction['courseCode'] in courses:
-                   courses[code].tests.append(reduction['courseCode'])
-       
-       #Pickle the courses for faster access later
-       os.makedirs("data")
-       pickle.dump(courses, open("data/courses.p", "wb" ))
-       pickle.dump(Course.wordFrequency, open("data/wordfrequency.p", "wb" ))
-       return courses
+
+       for language in languages:
+          courses = {}
+          for i in range(numberOfCourses):
+              code = courseCodes[i]
+              courseData = getCourseData(baseUrl + language + "/" + code)
+              if courseData != None:
+                 courses[code] = Course(courseData)
+              sys.stdout.write("\r(" + language.upper() + ") Downloading subject %d/%d" % (i+1, numberOfCourses))
+          print()    
+          for code in courses:
+             courses[code].determineKeywords()
+             #Use credit reduction as a basis for tests
+             if 'creditReduction' in courses[code].data:
+                for reduction in courses[code].data['creditReduction']:
+                   if reduction['courseCode'] in courses:
+                      courses[code].tests.append(reduction['courseCode'])
+          
+          #Pickle the courses for faster access later
+          dataDir = "data/" + language + "/"
+          os.makedirs(dataDir)
+          pickle.dump(courses, open(dataDir + "courses.p", "wb" ))
+          pickle.dump(Course.wordFrequency, open(dataDir + "wordfrequency.p", "wb" ))
+
+          coursesList[language] = courses
+       return coursesList[chosenLanguage]

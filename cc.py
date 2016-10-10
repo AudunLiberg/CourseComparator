@@ -17,7 +17,8 @@ def main(arguments):
     redownload = "-r" in arguments
     verbose = "-v" in arguments
     test = "-t" in arguments
-    courses = getCourses(redownload)
+    language = arguments[arguments.index("-l")+1] if "-l" in arguments else "en"
+    courses = getCourses(redownload, language)
     course1 = arguments[1] if len(arguments) > 1 and arguments[1] in courses else None
     course2 = arguments[2] if len(arguments) > 2 and arguments[2] in courses else None
     mode = determineMode(course1, course2)
