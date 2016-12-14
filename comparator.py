@@ -1,7 +1,7 @@
 import sys
 from comparators import *
 
-fastEnsemble = [jaccard_desc, levenshtein_desc]
+fastEnsemble = [] #Add comparators from the comparators/ folder here
 weights = [0.2, 0.8]
 slowEnsemble = []
 slowEnsembleLimit = 50
