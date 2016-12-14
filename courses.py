@@ -1,4 +1,4 @@
-import requests, sys, os, shutil, pickle, glob
+import requests, sys, os, shutil, pickle, glob, math
 from stringUtil import cleanText
 from collections import Counter
 from operator import itemgetter
@@ -14,16 +14,18 @@ languages = {
 
 class Course:
 
-   wordFrequency = Counter()
+   documentFrequency = Counter()
    
    def __init__(self, data):
       self.language = languages[data["language"]]
       self.stemmer = SnowballStemmer(self.language)
+      self.termFrequency = Counter()
       self.data = data
       self.setDescription()
       self.tokenize()
       self.countWords()
       self.tests = []
+
 
    def setDescription(self):
       self.description = self.data['name'] + ". "
@@ -46,16 +48,22 @@ class Course:
          self.sentencesWithoutStopwords.append(tokensWithoutStopwords)
 
    def countWords(self):
+      wordSet = set()
       for sentence in self.sentencesWithoutStopwords:
          for word in sentence:
-            self.wordFrequency[self.stemmer.stem(word.lower())] += 1
+            word = self.stemmer.stem(word.lower())
+            self.termFrequency[word] += 1
+            wordSet |= {word}
+      
+      for word in wordSet:
+         self.documentFrequency[word] += 1
 
    def determineKeywords(self):
       wordsByRarity = {}
       for sentence in self.sentencesWithoutStopwords:
          for word in sentence:
             word = self.stemmer.stem(word.lower())
-            wordsByRarity[word] = self.wordFrequency[word]
+            wordsByRarity[word] = self.documentFrequency[word] / self.termFrequency[word]
 
       wordsByRarity = sorted(wordsByRarity.items(), key=itemgetter(1))
       numKeywords = min(len(wordsByRarity), 30)
@@ -82,7 +90,7 @@ def getCourses(redownload, chosenLanguage):
 
     coursesList = {}
     if isPickled():
-       Course.wordFrequency = pickle.load(open("data/" + chosenLanguage + "/wordfrequency.p", "rb"))
+       Course.documentFrequency = pickle.load(open("data/" + chosenLanguage + "/documentFrequency.p", "rb"))
        return pickle.load(open("data/" + chosenLanguage + "/courses.p", "rb"))
     else:
        baseUrl = "http://www.ime.ntnu.no/api/course/"
@@ -110,7 +118,7 @@ def getCourses(redownload, chosenLanguage):
           dataDir = "data/" + language + "/"
           os.makedirs(dataDir)
           pickle.dump(courses, open(dataDir + "courses.p", "wb" ))
-          pickle.dump(Course.wordFrequency, open(dataDir + "wordfrequency.p", "wb" ))
+          pickle.dump(Course.documentFrequency, open(dataDir + "documentFrequency.p", "wb" ))
 
           coursesList[language] = courses
        return coursesList[chosenLanguage]
