@@ -69,9 +69,12 @@ def getCourseCodeList(url):
     return [course['code'] for course in result.json()['course']]
 
 def getCourseData(url):
-    result = requests.get(url).json()
-    result["course"]["language"] = result["request"]["language"]
-    return result["course"]
+    try:
+       result = requests.get(url).json()
+       result["course"]["language"] = result["request"]["language"]
+       return result["course"]
+    except:
+       return None
 
 def getCourses(redownload, chosenLanguage):
     if redownload and isPickled():
