@@ -27,7 +27,7 @@ def main(arguments):
         comparison = compareToOneCourse(courses[course1], courses[course2])
         if verbose:
             comparison.printExplanation()
-        print(course1, "and", course2, "have a", comparison.getScore()*100, "% match.")
+        print(course1, "and", course2, "have a", comparison.getScore(), "% match.")
     elif mode == "find-equal":
         comparisons = compareToAllCourses(courses, course1)
 
