@@ -1,6 +1,23 @@
 from comparator import compareToAllCourses
 
 def runTests(courses):
+   # Partition courses into a development and a validation set
+   courseList = list(courses.keys())
+   size = len(courses)
+   limit = int(0.8*size + 1)
+   developmentTestSet = courseList[:limit]
+   validationTestSet = courseList[limit:]
+
+   dPrecisions, dRevalls, dFs, dAveragePrecisions = runTestSet(developmentTestSet, courses)
+   vPrecisions, vRevalls, vFs, vAveragePrecisions = runTestSet(validationTestSet, courses)
+   
+   print("-------")
+   print("Development set performance:")
+   printMetrics(dPrecisions, dRevalls, dFs, dAveragePrecisions)
+   print("\n\nValidation set performance:")
+   printMetrics(vPrecisions, vRevalls, vFs, vAveragePrecisions)
+
+def runTestSet(tests, courses):
    numberOfTests = 0
    averagePrecisions = []
    precisions = []
@@ -8,7 +25,7 @@ def runTests(courses):
    Fs = []
    
    print("%-12s %-12s %-12s %-12s " % ("Coure", "Recall", "Precision", "F-Measure"))
-   for code in courses:
+   for code in tests:
       course = courses[code]
       if len(course.tests) > 0:
          numberOfTests += 1
@@ -44,7 +61,10 @@ def runTests(courses):
          Fs.append(F)
          
          print("%-12s %-12s %-12s %-12s " % (code, str(round(recall, 3)), str(round(precision, 3)), str(round(F, 3))))
-   print("-------")
+
+   return precisions, recalls, Fs, averagePrecisions
+
+def printMetrics(precisions, recalls, Fs, averagePrecisions):
    print("Average Precision:", sum(precisions)/len(precisions))
    print("Average Recall:", sum(recalls)/len(recalls))
    print("Average F-Measure:", sum(Fs)/len(Fs))
