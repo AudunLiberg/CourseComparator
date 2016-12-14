@@ -1,11 +1,12 @@
 from comparator import compareToAllCourses
-import random
+from random import Random
 
 def runTests(courses):
    # Partition courses into a development and a validation set
    courseList = list(courses.keys())
    courseList.sort()
-   random.shuffle(courseList, lambda: 0.1) #Random, but deterministic shuffling
+   Random(4).shuffle(courseList)
+   
    size = len(courses)
    limit = int(0.8*size + 1)
    developmentTestSet = courseList[:limit]
