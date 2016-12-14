@@ -1,7 +1,8 @@
 import sys
 from comparators import *
 
-fastEnsemble = [equalkeywords]
+fastEnsemble = [jaccard_desc, levenshtein_desc]
+weights = [0.2, 0.8]
 slowEnsemble = []
 slowEnsembleLimit = 50
 
@@ -23,7 +24,10 @@ class Comparison:
          self.scores.append(score)
 
    def getScore(self):
-      return sum(self.scores) / float(len(self.scores))
+      score = 0
+      for i in range(len(self.scores)):
+         score += self.scores[i] * weights[i]
+      return score / float(len(self.scores))
 
    def addReport(self, comparator, report):
       report = "Details from " + comparator + ":\n" + report + "\n"
