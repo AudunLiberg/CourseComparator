@@ -1,10 +1,8 @@
-import sys
+import sys, time
 from comparators import *
 
-fastEnsemble = [] #Add comparators from the comparators/ folder here
-weights = [0.2, 0.8]
-slowEnsemble = []
-slowEnsembleLimit = 50
+comparators = [levenshtein_name, vsm_desc] #Add comparators from the comparators/ folder here
+weights = [0.5, 0.5]
 
 def getModuleName(module):
    return module.__name__.split(".")[1]
@@ -40,37 +38,58 @@ class Comparison:
 
 def compareToOneCourse(course1, course2):
    comparison = Comparison(course1, course2)
-   comparison.compare(fastEnsemble)
-   comparison.compare(slowEnsemble)
+   comparison.compare(comparators)
    return comparison
 
-def compareToAllCourses(courses, course, doPrint=True):
+def compareToAllCourses(courses, course, filtering, doPrint=True):
+   time = -1
+
+   #Start human-guided cluster selection 
+   if filtering:
+      print(course.data['code'], course.data['name'])
+      courses, time = human_cluster_selection(courses)
+      courses[course.data['code']] = course
+      course = course.data['code']
+   
    comparisons = []
    courseCodes = list(courses.keys())
    numberOfCourses = len(courses)
 
-   #Perform comparisons from the fast ensemble
+   #Perform comparisons
    for i in range(numberOfCourses):
       code = courseCodes[i]
       if course == code:
          continue
       if doPrint:
-         sys.stdout.write("\rStep 1: Fast comparison with course %d/%d" % (i+1, numberOfCourses))
+         sys.stdout.write("\rComparison with course %d/%d" % (i+1, numberOfCourses))
+
       comparison = Comparison(courses[course], courses[code])
-      comparison.compare(fastEnsemble)
+      comparison.compare(comparators)
       comparisons.append(comparison)
    print()
 
-   #Sort the results and pick out the n best ones
-   comparisons = sorted(comparisons, key=lambda x: x.getScore(), reverse=True)[:slowEnsembleLimit]
-
-   #Perform comparisons from the slow ensemble
-   for i, comparison in enumerate(comparisons):
-      if doPrint:
-         sys.stdout.write("\rStep 2: Slow comparison with course %d/%d" % (i+1, slowEnsembleLimit))
-      comparison.compare(slowEnsemble)
+   #Sort the results
+   comparisons = sorted(comparisons, key=lambda x: x.getScore(), reverse=True)
    
-   return comparisons
+   return comparisons, time
 
+def human_cluster_selection(clusters):
+   courses = []
+   start = time.time()
+   for i in range(len(clusters[0])):
+      cluster = clusters[0][i]
+      label = clusters[1][i]
+      print("Cluster ", i+1, ":", sep="")
+      print("\n\tLabel:" + label)
+      print()
+      include = input("Should this cluster be included? (Y/N): ")
+      if include.lower() == "y":
+         courses += cluster
+   end = time.time()
+
+   coursesDict = {}
+   for course in courses:
+      coursesDict[course.data['code']] = course
+   return coursesDict, end-start
 
    
