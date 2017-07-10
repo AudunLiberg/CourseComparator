@@ -12,6 +12,8 @@ languages = {
    "en": "english"
 }
 
+institutes = {}
+
 class Course:
 
    documentFrequency = Counter()
@@ -24,6 +26,7 @@ class Course:
       self.setDescription()
       self.tokenize()
       self.countWords()
+      self.storeInstitute()
       self.tests = []
 
 
@@ -31,7 +34,7 @@ class Course:
       self.description = self.data['name'] + ". "
       if not 'infoType' in self.data:
          return #Some courses does not have any information in the API
-      interestingInfoCodes = ["INNHOLD", "LÆRFORM", "MÅL"]
+      interestingInfoCodes = ["INNHOLD", "MÅL"]
       for info in self.data['infoType']:
          if info['code'] in interestingInfoCodes and 'text' in info:
             self.description += cleanText(info['text']) + " "
@@ -69,6 +72,14 @@ class Course:
       numKeywords = min(len(wordsByRarity), 30)
       self.keywords = [keyword[0] for keyword in wordsByRarity[:numKeywords]]
 
+   def storeInstitute(self):
+      orgCode = self.data['ouId']
+      if orgCode not in institutes:
+         result = requests.get("http://www.ime.ntnu.no/api/org/en/" + str(orgCode)).json()
+         name = result["orgUnitDetailed"]["name"]
+         institutes[orgCode] = name
+	
+
 def isPickled():
    return os.path.isdir("data")
 
@@ -91,7 +102,9 @@ def getCourses(redownload, chosenLanguage):
     coursesList = {}
     if isPickled():
        Course.documentFrequency = pickle.load(open("data/" + chosenLanguage + "/documentFrequency.p", "rb"))
-       return pickle.load(open("data/" + chosenLanguage + "/courses.p", "rb"))
+       Course.institutes = pickle.load(open("data/" + chosenLanguage + "/institutes.p", "rb"))
+       courses = pickle.load(open("data/" + chosenLanguage + "/courses.p", "rb"))
+       return courses
     else:
        baseUrl = "http://www.ime.ntnu.no/api/course/"
        courseCodes = getCourseCodeList(baseUrl + "-")
@@ -114,11 +127,12 @@ def getCourses(redownload, chosenLanguage):
                    if reduction['courseCode'] in courses:
                       courses[code].tests.append(reduction['courseCode'])
           
-          #Pickle the courses for faster access later
+          #Pickle the courses for access later
           dataDir = "data/" + language + "/"
           os.makedirs(dataDir)
           pickle.dump(courses, open(dataDir + "courses.p", "wb" ))
           pickle.dump(Course.documentFrequency, open(dataDir + "documentFrequency.p", "wb" ))
+          pickle.dump(institutes, open(dataDir + "institutes.p", "wb" ))
 
           coursesList[language] = courses
        return coursesList[chosenLanguage]
