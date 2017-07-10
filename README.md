@@ -1,12 +1,16 @@
 # CourseComparator
-A comparator designed to find similar courses within the Norwegian University of Science and Technology’s extensive course catalogue. The CourseComparator utilizes an ensemble of classical information retrieval and natural language processing techniques.
+Source code for experiments done as part of my master's thesis.
 
 ## Requirements
-
 * [nltk](http://www.nltk.org/)
 
 ## Usage
-Run the program through `cc.py`. Supplying a course code as an argument will find the best matches for that course. Supplying two codes will compare those two particular courses. Example input:
+Run the program through `cc.py`. Supplying a course code as an argument will find the best matches for that course.
 
 * `python cc.py TDT4100`
-* `python cc.py TMA4100 MA1101`
+
+## Flags
+* __-t__  Replicate tests from thesis
+* __-nf__  Disable filtering
+* __-r__  Redownload courses from API
+* __-c__ Create and store clustering
