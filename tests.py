@@ -21,7 +21,7 @@ def runTests(courses, filtering):
    developmentTestSet = courseList[:limit]
    validationTestSet = courseList[limit:]
 
-   dPrecisions, dRecalls, dFs, dAveragePrecisions, dTime, dFilteringTimes, dComparisons = runTestSet(developmentTestSet, courses, 1, clusters)
+   dPrecisions, dRecalls, dFs, dAveragePrecisions, dTime, dFilteringTimes, dComparisons = runTestSet(developmentTestSet, courses, 10, clusters)
    vPrecisions, vRecalls, vFs, vAveragePrecisions, vTime, vFilteringTimes, vComparisons = runTestSet(validationTestSet, courses, 20, clusters)
    
    print("-------")
